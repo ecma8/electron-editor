@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>EDITOR</title>
+    <style>
+        body{ user-select:none; margin: 0px; padding: 0px;}
+
+        .content .top{
+            background: #ffffff;
+            overflow: hidden;
+            font-size: 14px;
+            color: #666666;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            height: 5rem;
+        }
+        .content .top .logo{
+            margin-top: 21px;
+            margin-left: 15px;
+        }
+        .btn{ height: 5rem; width: 8rem; color: #3a585f; float: right; line-height: 5rem; padding-left: 1.4rem; padding-right: 1.4rem;  text-align: center; box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.55);transition: 0.5s; font-family: "微软雅黑";}
+
+        .btn:hover{ background-color: #f5f5f5;transition: 0.5s;}
+        .btn p{ height: 5rem; width: 8rem; color: #3a585f; float: left; margin: 0px; padding: 0px; }
+        .btn .btnTop{ position: relative; height: 8rem;margin-top: 0rem;transition: 0.3s;}
+
+        .btn:hover .btnTop{      margin-top: -5rem;transition: 0.3s;}
+
+        #box{
+            transition: 0.5s;
+            border: 1px dashed #c8c8c8;
+            margin: 1rem;
+            margin-top:1.5rem;
+            background-color: #fff;
+            box-shadow: inset 0px 0px 140px #ececf4,0px 0px 22px rgba(0, 0, 0, 0.15);
+            /*  box-shadow: ;*/
+            font-family: "微软雅黑";
+            color: #3c7e7e;
+            font-size: 2rem;
+            text-align: center;
+        }
+        #box:hover{
+            transition: 0.5s;
+            cursor: pointer;
+            border: 1px dashed #aaa;
+            background-color: #eff4f4;
+            box-shadow: inset 0px 0px 140px #ececf4,0px 0px 22px rgba(0, 0, 0, 0.15);
+        }
+        #box:hover p{
+            transition: 0.5s; transform: scale(1.1,1.1);
+
+        }
+        .menu{ width: 100%; height: 2.7rem; line-height: 3rem;font-family: "宋体";}
+        .menu p{ margin-left: 1rem;  color: #3a585f;}
+
+        #box p{outline: none;  top: 50%;left: 50%; transition: 0.5s; transform: scale(1,1);
+            margin-top: 50px; margin-left: -7.5rem;  /* margin-top值为自身高度的一半 */
+            position: absolute;
+            padding:0;}
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 300px;
+            border-radius: 10px; /*这个属性设置使填充进度条时的图形为圆角*/
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 20px;
+            border-radius: 10px; /*将轨道设为圆角的*/
+            box-shadow: 0 1px 1px #def3f8, inset 0 .125em .125em #0d1112; /*轨道内置阴影效果*/
+        }
+        input[type=range]:focus {
+            outline: none;
+        }input[type=range]::-webkit-slider-thumb {
+             -webkit-appearance: none;
+             height: 25px;
+             width: 25px;
+             margin-top: -5px; /*使滑块超出轨道部分的偏移量相等*/
+             background: #ffff00;
+             border-radius: 50%; /*外观设置为圆形*/
+             border: solid 0.125em rgba(205, 224, 230, 0.5); /*设置边框*/
+             box-shadow: 0 .125em .125em #3b4547; /*添加底部阴影*/
+         }
+    </style>
+</head>
+<body>
+<!--<input type="text" id="filePath">-->
+<!--<button id="index">打开首页</button>-->
+<!--<button id="edit">打开编辑页面</button>-->
+<!--<button id="copy">拷贝文件</button>-->
+<!--<button id="export">导出文件</button>-->
+<!--<button id="removeImage">removeImage</button>-->
+<!--<button id="removeAnimation">removeImage</button>-->
+<!--<button id="removeAudio">removeImage</button>-->
+<!--<div id="box">拖拽文件到此区域</div>-->
+<div class="content">
+    <div class="top">
+        <!--<img class="logo" src="./assets/images/logo.png">-->
+        <div class="btn">
+            <div class="btnTop" id="btnTop">
+                <p>按F1键可打开控制台</p>
+                <p>按F1键可打开控制台</p>
+            </div>
+        </div>
+    </div>
+    <div class="menu">
+        <p>可视化编辑器  :  拖拽文件夹到下面区域,来编辑可视化操作.</p>
+    </div>
+
+    <div id="box"  dragable =false >
+        <p dragable =false >拖拽文件到此区域</p>
+    </div>
+</div>
+</body>
+<script>
+    var h = document.documentElement.clientHeight || document.body.clientHeight;
+    var box=document.getElementById('box');
+    box.style.height=h-185+'px';
+    window.onresize = function(){
+        var hg = document.documentElement.clientHeight || document.body.clientHeight;
+        box.style.height=hg-185+'px';
+    };
+    let filePath='';
+    let editFilePath = '';
+    let defaultPath = __dirname + '/dist/';
+    defaultPath = defaultPath.replace(/\\/g, '/');
+    const path = require("path");
+    const fs = require("fs");
+    const electron = require("electron");
+
+    let copyFile = function (srcPath, tarPath, cb) {
+        let rs = fs.createReadStream(srcPath);
+        rs.on('error', function (err) {
+            if (err) {
+                console.log('read error', srcPath)
+            }
+            cb && cb(err)
+        });
+
+        let ws = fs.createWriteStream(tarPath);
+        ws.on('error', function (err) {
+            if (err) {
+                console.log('write error', tarPath)
+            }
+            cb && cb(err)
+        });
+        ws.on('close', function (ex) {
+            cb && cb(ex)
+        });
+
+        rs.pipe(ws)
+    };
+    let copyFolder = function (srcDir, tarDir, cb) {
+        fs.readdir(srcDir, function (err, files) {
+            let count = 0;
+            let checkEnd = function () {
+                ++count == files.length && cb && cb()
+            }
+
+            if (err) {
+                checkEnd();
+                return
+            }
+            files.forEach(function (file) {
+                let srcPath = path.join(srcDir, file);
+                let tarPath = path.join(tarDir, file);
+                fs.stat(srcPath, function (err, stats) {
+                    if (stats.isDirectory()) {
+                        // console.log('mkdir', tarPath);
+                        fs.mkdir(tarPath, function (err) {
+                            if (err) {
+                                console.log(err);
+                                return
+                            }
+
+                            copyFolder(srcPath, tarPath, checkEnd)
+                        })
+                    } else {
+                        copyFile(srcPath, tarPath, checkEnd)
+                    }
+                })
+            });
+
+            //为空时直接回调
+            files.length === 0 && cb && cb()
+        })
+    };
+    let deleteFolder = function (path) {
+        let files = [];
+        if (fs.existsSync(path)) {
+            files = fs.readdirSync(path);
+            files.forEach(function (file, index) {
+                let curPath = path + "/" + file;
+                // console.log(curPath);
+                if (fs.statSync(curPath).isDirectory()) { // recurse
+                    deleteFolder(curPath);
+
+                } else { // delete file
+                    fs.unlinkSync(curPath);
+                }
+            });
+            if (!(path === defaultPath || path === filePath)) {
+                fs.rmdirSync(path);
+            }
+        }
+    };
+
+    let BrowserWindow = electron.remote.BrowserWindow;
+    let indexPage = null;
+    let editPage = null;
+    let indexStatus = true;
+    let editStatus = true;
+    // document.getElementById("index").onclick = function () {
+    //     if (indexStatus) {
+    //         indexStatus = false;
+    //         indexPage = new BrowserWindow({width: 1000, height: 800});
+    //         indexPage.loadURL("http://localhost:8888/#/");
+    //         indexPage.webContents.openDevTools({detach: true});
+    //         indexPage.on("close", function () {
+    //             indexPage = null;
+    //             indexStatus = true;
+    //         })
+    //     }
+    // };
+    // document.getElementById("edit").onclick = function () {
+    //     if (editStatus){
+    //         editStatus = false;
+    //         editPage = new BrowserWindow({width: 1000, height: 800});
+    //         editPage.loadURL("http://localhost:8888/#/edit");
+    //         editPage.webContents.openDevTools({detach: true});
+    //         editPage.on("close", function () {
+    //             editStatus = true;
+    //             alert(123);
+    //         })
+    //     }
+    // };
+    // document.getElementById("copy").onclick = function () {
+    //     let fromPath = document.getElementById('filePath').value;
+    //     deleteFolder(defaultPath);
+    //     copyFolder(fromPath, defaultPath, function (err) {
+    //         if (err) {
+    //             return
+    //         }
+    //     });
+    // };
+    //
+    // document.getElementById('export').onclick = function () {
+    //     deleteFolder(filePath);
+    //     copyFolder(defaultPath, filePath, function (err) {
+    //         if (err) {
+    //             return
+    //         }
+    //     });
+    // };
+
+    require('./renderer.js');
+    function walk(path, it) {
+        var dirList = fs.readdirSync(path);
+        for (var i = 0; i < dirList.length; i++) {
+            var item = dirList[i];
+            if (fs.statSync(path + '/' + item).isDirectory()) {
+                if (item == it) {
+                    return path + '/' + item;
+                } else {
+                    var j = walk(path + '/' + item, it);
+                    if (j) {
+                        return j;
+                    } else {
+                        continue;
+                    }
+                }
+            } else if (fs.statSync(path + '/' + item).isFile()) {
+                if (item == it) {
+                    return path + '/' + item;
+                }else{
+                }
+            }
+        }
+    }
+    box.ondragover = function (e) {
+        e.preventDefault();
+    };
+    box.ondrop = function (e) {
+        e.preventDefault();
+        if (editStatus) {
+            let file = e.dataTransfer.files[0];
+            filePath = file.path.replace(/\\/g,'/')+'/';
+            editFilePath = walk(filePath,'content.json');
+            if(!editFilePath){
+                editFilePath = walk(filePath,'content.js');
+                editStatus = false;
+                editPage = new BrowserWindow({width: 1000, height: 800});
+                editPage.loadURL("http://localhost:8888/edit");
+                editPage.webContents.openDevTools({detach: true});
+                editPage.on("close", function () {
+                    editStatus = true;
+                    filePath='';
+                })
+            }
+            else{
+                fs.readFile(editFilePath,{encoding:"utf-8"}, function (err, fr) {
+                    if (err) {
+                        console.log(err);
+                    }else {
+                        if(JSON.parse(fr).type){
+                            editStatus = false;
+                            editPage = new BrowserWindow({width: 1000, height: 800});
+                            editPage.loadURL("http://localhost:8888/#/edit");
+                            editPage.webContents.openDevTools({detach: true});
+                            editPage.on("close", function () {
+                                editStatus = true;
+                                filePath='';
+                            });
+                        }else{
+                            editStatus = false;
+                            editPage = new BrowserWindow({width: 1000, height: 800});
+                            editPage.loadURL("http://localhost:8888/edit");
+                            editPage.webContents.openDevTools({detach: true});
+                            editPage.on("close", function () {
+                                editStatus = true;
+                                filePath='';
+                            });
+                        }
+                    }
+                });
+
+            }
+            // editStatus = false;
+            // editPage = new BrowserWindow({width: 1000, height: 800});
+            // editPage.loadURL("http://localhost:8888/#/edit");
+            // editPage.webContents.openDevTools({detach: true});
+            // editPage.on("close", function () {
+            //     editStatus = true;
+            //     filePath='';
+            //     // deleteFolder(filePath);
+            //     // copyFolder(defaultPath, filePath, function (err) {
+            //     //     if (err) {
+            //     //         return
+            //     //     }else{
+            //     //         deleteFolder(defaultPath);
+            //     //     }
+            //     // });
+            // })
+            // deleteFolder(defaultPath);
+            // copyFolder(file.path, defaultPath, function (err) {
+            //     if (err) {
+            //         return
+            //     } else {
+            //         if (editStatus) {
+            //             editStatus = false;
+            //             editPage = new BrowserWindow({width: 1000, height: 800});
+            //             editPage.loadURL("http://localhost:8888/#/edit");
+            //             editPage.webContents.openDevTools({detach: true});
+            //             editPage.on("close", function () {
+            //                 editStatus = true;
+            //                 deleteFolder(filePath);
+            //                 copyFolder(defaultPath, filePath, function (err) {
+            //                     if (err) {
+            //                         return
+            //                     }else{
+            //                         deleteFolder(defaultPath);
+            //                     }
+            //                 });
+            //             })
+            //         }
+            //     }
+            // });
+        } else {
+            alert('已打开页面');
+        }
+    };
+</script>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <!-- when using the mode "code", it's important to specify charset utf-8 -->
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+    <link href="./assets/css/jsoneditor.css" rel="stylesheet" type="text/css">
+    <script src="./assets/js/jsoneditor.js"></script>
+</head>
+<body>
+<div id="jsoneditor" style="width: 960px; height: 600px;"></div>
+<input type="button" id="save" value="save" style="width: 120px;height: 36px">
+<script>
+    window.$ = window.jQuery = require("jquery");
+    let container = document.getElementById("jsoneditor");
+    let options = {};
+    let ext = '';
+    let jsName = '';
+    let editor = new JSONEditor(container, options);
+    $('#jsoneditor').css({
+        width:$('body').width(),
+        height:600+'px'
+    });
+    window.onresize=function(){
+        $('#jsoneditor').css({
+            width:$('body').width(),
+            height:600+'px'
+        })
+    };
+    $.ajax({
+        url:'/getEditData',
+        method:'get',
+        dataType:'json',
+        success:function (res) {
+            let jsonData;
+            if(res.type === 'success'){
+                ext = res.ext;
+                if(res.ext==='json'){
+                    jsonData = res.data;
+                    editor.set(jsonData);
+                }else{
+                    $('body').append(res.data);
+                    if(typeof(content)!=='undefined'){
+                        jsonData = content;
+                        jsName = 'content';
+                        editor.set(jsonData);
+                    }
+                    else if(typeof(configData)!=='undefined'){
+                        jsonData = configData;
+                        jsName = 'configData';
+                        editor.set(jsonData);
+                    }else if(typeof(question)!=='undefined'){
+                        jsonData = question;
+                        jsName = 'question';
+                        editor.set(jsonData);
+                    }
+                }
+            }
+        },
+        error:function () {
+
+        }
+    });
+    document.getElementById('save').onclick=function(){
+        let data = editor.get();
+        $.ajax({
+            url:'/writeEditData',
+            method:'post',
+            dataType:'json',
+            data:{
+                dataList:JSON.stringify(data),
+                ext:ext,
+                name:jsName
+            },
+            success:function (res) {
+
+            },
+            error:function () {
+
+            }
+        });
+    }
+</script>
+</body>
+</html>
